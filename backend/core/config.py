@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     SBERT_WEIGHT: float = 0.50
     SKILL_WEIGHT: float = 0.20
     MAX_PDF_SIZE_MB: int = 10
+    # Qdrant
+    QDRANT_HOST: str = "localhost"
+    QDRANT_PORT: int = 6333
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     class Config:
         env_file = ".env"

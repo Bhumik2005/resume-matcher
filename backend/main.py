@@ -7,19 +7,26 @@ from slowapi.errors import RateLimitExceeded
 
 from api.routes import router
 from core.config import settings
+from core.vector_store import init_collections
 
 limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Resume Matcher API starting up...")
+    print("🔌 Initialising Qdrant collections...")
+    try:
+        init_collections()
+        print("✅ Qdrant collections ready")
+    except Exception as e:
+        print(f"⚠️  Qdrant not available: {e} — vector features disabled")
     yield
     print("🛑 Shutting down...")
 
 app = FastAPI(
     title="Resume Matcher API",
-    description="AI-powered resume vs job description matching",
-    version="1.0.0",
+    description="AI-powered semantic talent intelligence platform",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -38,4 +45,16 @@ app.include_router(router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "version": "1.0.0"}
+    from core.vector_store import get_collection_stats
+    try:
+        stats = get_collection_stats()
+        qdrant_status = "connected"
+    except Exception:
+        stats = {}
+        qdrant_status = "unavailable"
+    return {
+        "status": "healthy",
+        "version": "2.0.0",
+        "qdrant": qdrant_status,
+        "collections": stats,
+    }
