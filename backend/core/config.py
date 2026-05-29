@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     ENV: str = "development"
     DEBUG: bool = True
     SECRET_KEY: str = "change-me-in-production"
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:8501", "http://localhost:3000"]
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:8501", "http://localhost:3000", "http://localhost:5173"]
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/resume_matcher"
     SBERT_MODEL: str = "all-MiniLM-L6-v2"
     SPACY_MODEL: str = "en_core_web_sm"
