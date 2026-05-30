@@ -4,10 +4,14 @@ API Routes — with full security pipeline + Qdrant vector storage
 import uuid
 import logging
 from typing import Annotated
-from fastapi import APIRouter, File, Form, UploadFile, HTTPException, status, Request
+from fastapi import APIRouter, File, Form, UploadFile, HTTPException, status, Request, Depends
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from celery.result import AsyncResult
+from db.session import get_db
+from db import crud
+from auth.dependencies import get_optional_user
+from sqlalchemy.orm import Session
 
 from core.config import settings
 from core.pdf_extractor import extract_text_from_pdf
@@ -35,6 +39,8 @@ async def match_resume(
     request: Request,
     resume: Annotated[UploadFile, File()],
     job_description: Annotated[str, Form()],
+    db: Session = Depends(get_db),
+    current_user = Depends(get_optional_user),
 ):
     # ── Basic validation ──────────────────────────────────────────────────────
     if resume.content_type not in ("application/pdf", "application/octet-stream"):
@@ -84,6 +90,19 @@ async def match_resume(
     analysis_id = str(uuid.uuid4())
     result["analysis_id"] = analysis_id
 
+    result_security = {
+        "text_confidence": security_report["text_confidence"]["level"],
+        "text_confidence_score": security_report["text_confidence"]["confidence"],
+        "word_count": security_report["text_confidence"]["word_count"],
+        "stuffing_detected": security_report["stuffing_analysis"]["is_stuffed"],
+        "stuffing_score": security_report["stuffing_analysis"]["stuffing_score"],
+        "flagged_terms": security_report["stuffing_analysis"]["flagged_terms"],
+        "injection_detected": security_report["injection_detected"],
+        "pii_types_found": security_report["pii_scrub"]["pii_found"],
+        "warnings": security_report["warnings"],
+    }
+    result["security"] = result_security
+
     # ── Store embeddings in Qdrant ────────────────────────────────────────────
     try:
         from core.vector_store import store_resume, store_job
@@ -110,6 +129,20 @@ async def match_resume(
         logger.info(f"Embeddings stored in Qdrant: {analysis_id}")
     except Exception as e:
         logger.warning(f"Qdrant storage failed (non-blocking): {e}")
+
+    # ── Save to PostgreSQL ────────────────────────────────────────────────────
+    try:
+        crud.save_analysis(
+            db=db,
+            analysis_id=analysis_id,
+            result=result,
+            security=result_security,
+            user_id=current_user.id if current_user else None,
+            resume_text=resume_text,
+        )
+        logger.info(f"Analysis saved to PostgreSQL: {analysis_id}")
+    except Exception as e:
+        logger.warning(f"PostgreSQL save failed (non-blocking): {e}")
 
     # ── Attach security report ────────────────────────────────────────────────
     result["security"] = {
@@ -344,3 +377,58 @@ async def run_evaluation():
         return report
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
+    
+    
+@router.get(
+    "/skills/related",
+    summary="Find skills related to a given skill",
+)
+async def get_related_skills(
+    skill: str,
+    top_k: int = 5,
+):
+    """
+    Find semantically related skills using SBERT embeddings.
+    Pure ML — no hardcoded rules.
+    """
+    if len(skill.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Skill name too short.")
+    try:
+        from core.transferable_skills import find_related_skills
+        from core.skill_extractor import SKILL_VOCABULARY
+        related = find_related_skills(
+            skill=skill,
+            candidate_skills=list(SKILL_VOCABULARY),
+            top_k=top_k,
+            threshold=0.30,
+        )
+        return {
+            "skill": skill,
+            "related_skills": related,
+            "count": len(related),
+            "method": "SBERT cosine similarity — no hardcoded rules",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/skills/graph",
+    summary="Build skill similarity graph",
+)
+async def get_skill_graph(skills: str):
+    """
+    Build a skill relationship graph for visualization.
+    Pass comma-separated skills: ?skills=python,pytorch,tensorflow,keras
+    """
+    skill_list = [s.strip() for s in skills.split(",") if s.strip()]
+    if len(skill_list) < 2:
+        raise HTTPException(status_code=400, detail="Need at least 2 skills.")
+    if len(skill_list) > 20:
+        raise HTTPException(status_code=400, detail="Max 20 skills per graph.")
+    try:
+        from core.transferable_skills import build_skill_graph
+        graph = build_skill_graph(skill_list)
+        return graph
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -67,6 +67,37 @@ class SecurityReport(BaseModel):
     pii_types_found: List[str]
     warnings: List[str]
 
+class TransferCoverage(BaseModel):
+    missing_skill: str
+    covered_by: str
+    similarity: float
+    relationship: str
+    message: str
+
+class NoTransfer(BaseModel):
+    missing_skill: str
+    message: str
+
+class TransferSummary(BaseModel):
+    total_missing: int
+    fully_covered_count: int
+    partially_covered_count: int
+    genuine_gaps_count: int
+
+class TransferableSkills(BaseModel):
+    fully_covered: List[TransferCoverage]
+    partially_covered: List[TransferCoverage]
+    no_transfer: List[NoTransfer]
+    effective_gap: float
+    summary: TransferSummary
+
+class CareerSuggestion(BaseModel):
+    suggested_skill: str
+    because_you_have: str
+    similarity: float
+    relationship: str
+    reason: str
+
 class MatchResponse(BaseModel):
     analysis_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -80,6 +111,8 @@ class MatchResponse(BaseModel):
     suggestions: List[str]
     explanation: Optional[Explanation] = None
     security: Optional[SecurityReport] = None
+    transferable_skills: Optional[TransferableSkills] = None
+    career_suggestions: Optional[List[CareerSuggestion]] = None
 
 class ErrorResponse(BaseModel):
     detail: str

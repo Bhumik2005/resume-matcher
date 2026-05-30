@@ -6,20 +6,33 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from api.routes import router
+from api.auth_routes import auth_router
 from core.config import settings
 from core.vector_store import init_collections
+from db.base import Base, engine
 
 limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Resume Matcher API starting up...")
+
+    # Create DB tables
+    print("🗄️  Creating database tables...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ Database tables ready")
+    except Exception as e:
+        print(f"⚠️  Database not available: {e}")
+
+    # Init Qdrant
     print("🔌 Initialising Qdrant collections...")
     try:
         init_collections()
         print("✅ Qdrant collections ready")
     except Exception as e:
         print(f"⚠️  Qdrant not available: {e} — vector features disabled")
+
     yield
     print("🛑 Shutting down...")
 
@@ -42,6 +55,7 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1/auth")
 
 @app.get("/health")
 async def health_check():

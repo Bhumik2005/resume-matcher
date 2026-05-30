@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     QDRANT_PORT: int = 6333
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
+    # PostgreSQL
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/resume_matcher"
 
     class Config:
         env_file = ".env"

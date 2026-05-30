@@ -40,7 +40,8 @@ def get_embedding(
 ) -> np.ndarray:
     """
     Generate a single document embedding with in-memory caching.
-    Returns a 384-dim numpy array (for all-MiniLM-L6-v2).
+    For short texts (skills), encodes directly.
+    For long texts (resumes), uses sentence-level mean pooling.
     """
     cache_key = f"{model_name}:{_hash_text(text)}"
 
@@ -50,17 +51,20 @@ def get_embedding(
 
     model = _get_model(model_name)
 
-    # Split into sentences, embed each, mean pool
-    import re
-    sentences = re.split(r"(?<=[.!?\n])\s*", text)
-    sentences = [s.strip() for s in sentences if len(s.split()) >= 5]
-    if not sentences:
-        sentences = [text]
+    # Short text (skill terms, phrases) — encode directly
+    if len(text.split()) <= 8:
+        doc_embedding = model.encode(text, show_progress_bar=False)
+    else:
+        # Long text (resumes, JDs) — sentence-level mean pooling
+        import re
+        sentences = re.split(r"(?<=[.!?\n])\s*", text)
+        sentences = [s.strip() for s in sentences if len(s.split()) >= 5]
+        if not sentences:
+            sentences = [text]
+        embeddings = model.encode(sentences, show_progress_bar=False, batch_size=32)
+        doc_embedding = np.mean(embeddings, axis=0)
 
-    embeddings = model.encode(sentences, show_progress_bar=False, batch_size=32)
-    doc_embedding = np.mean(embeddings, axis=0)
-
-    # Normalize to unit vector (required for cosine similarity in Qdrant)
+    # Normalize to unit vector
     norm = np.linalg.norm(doc_embedding)
     if norm > 0:
         doc_embedding = doc_embedding / norm

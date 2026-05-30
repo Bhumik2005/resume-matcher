@@ -133,6 +133,22 @@ def compute_match_score(
         "skill": {"score": skill_score, "weight": settings.SKILL_WEIGHT},
     }
 
+# ── Phase 4: Transferable skill intelligence ──────────────────────────────
+    try:
+        from core.transferable_skills import analyze_transferable_skills, get_career_suggestions
+        transferable = analyze_transferable_skills(
+            resume_skills=skill_analysis["resume_skills"],
+            missing_skills=skill_analysis["missing_skills"],
+        )
+        career_suggestions = get_career_suggestions(
+            resume_skills=skill_analysis["resume_skills"],
+            top_k=5,
+        )
+    except Exception as e:
+        logger.warning(f"Transferable skill analysis failed (non-blocking): {e}")
+        transferable = {}
+        career_suggestions = []
+
     # ── Phase B: Full explanation ─────────────────────────────────────────────
     explanation = generate_full_explanation(
         resume_text=resume_text,
@@ -165,4 +181,6 @@ def compute_match_score(
         "section_scores": section_scores,
         "suggestions": suggestions,
         "explanation": explanation,
+        "transferable_skills": transferable,
+        "career_suggestions": career_suggestions,
     }
