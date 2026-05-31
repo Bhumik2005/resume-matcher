@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #02040a;
+  --card: rgba(255,255,255,0.03);
+  --card-hover: rgba(255,255,255,0.05);
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f1f5f9;
+  --muted: #475569;
+  --muted2: #94a3b8;
+  --green: #10b981;
+  --green-dim: rgba(16,185,129,0.12);
+  --red: #f43f5e;
+  --red-dim: rgba(244,63,94,0.12);
+  --blue: #6366f1;
+  --blue-dim: rgba(99,102,241,0.12);
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --yellow: #fbbf24;
+  --yellow-dim: rgba(251,191,36,0.08);
+  --card2: rgba(255,255,255,0.02);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
