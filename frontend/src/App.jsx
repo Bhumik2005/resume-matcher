@@ -5,7 +5,7 @@ import Results from './components/Results'
 import Header from './components/Header'
 import Background from './components/Background'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API = 'https://resume-matcher-api-u3rf.onrender.com'
 
 export default function App() {
   const [result, setResult] = useState(null)

@@ -27,7 +27,7 @@ export default function UploadSection({ setResult, loading, setLoading }) {
       const form = new FormData()
       form.append('resume', file)
       form.append('job_description', jd)
-      const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      const API = 'https://resume-matcher-api-u3rf.onrender.com'
       const { data } = await axios.post(`${API}/api/v1/match`, form, { timeout: 120000 })
       setResult(data)
     } catch (e) {
