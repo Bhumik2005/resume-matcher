@@ -8,7 +8,6 @@ from slowapi.errors import RateLimitExceeded
 from api.routes import router
 from api.auth_routes import auth_router
 from core.config import settings
-from core.vector_store import init_collections
 from db.base import Base, engine
 
 limiter = Limiter(key_func=get_remote_address)
@@ -16,6 +15,13 @@ limiter = Limiter(key_func=get_remote_address)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Resume Matcher API starting up...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ Database tables ready")
+    except Exception as e:
+        print(f"⚠️  Database not available: {e}")
+    yield
+    print("🛑 Shutting down...")
 
     # Create DB tables
     print("🗄️  Creating database tables...")
