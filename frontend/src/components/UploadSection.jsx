@@ -28,7 +28,7 @@ export default function UploadSection({ setResult, loading, setLoading }) {
       form.append('resume', file)
       form.append('job_description', jd)
       const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-      const { data } = await axios.post(`${API}/api/v1/match`, form)
+      const { data } = await axios.post(`${API}/api/v1/match`, form, { timeout: 120000 })
       setResult(data)
     } catch (e) {
       setError(e.response?.data?.detail || 'Cannot connect to API. Is the backend running on port 8000?')
@@ -253,7 +253,7 @@ export default function UploadSection({ setResult, loading, setLoading }) {
                 animation: 'spin 0.8s linear infinite',
                 display: 'inline-block', flexShrink: 0,
               }} />
-              Analysing your resume...
+              Analysing... (first run may take 60s)
             </span>
           ) : '⚡ Analyse Match'}
         </button>
